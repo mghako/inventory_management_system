@@ -45,4 +45,8 @@ class User extends Authenticatable
     public function setPasswordAttribute($password) {
         $this->attributes['password'] = bcrypt($password);
     }
+
+    public function getToken($device_name) {
+        return $this->tokens()->where('device_name', $device_name)->first();
+    }
 }

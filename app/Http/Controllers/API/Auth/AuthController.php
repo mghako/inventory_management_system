@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Users\LogoutUserRequest;
 use App\Http\Requests\Users\StoreUserRequest;
+use App\Http\Resources\AuthUser\AuthUserResource;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
@@ -15,23 +16,32 @@ class AuthController extends Controller
 {
     
     public function login(Request $request) {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-            'device_name' => 'required',
-        ]);
-    
-        $user = User::where('email', $request->email)->first();
-    
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['The provided credentials are incorrect.'],
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required',
+                'device_name' => 'required',
             ]);
+        
+            $user = User::where('email', $request->email)->first();
+        
+            if (! $user || ! Hash::check($request->password, $user->password)) {
+                throw ValidationException::withMessages([
+                    'email' => ['The provided credentials are incorrect.'],
+                ]);
+            }
+
+            $user->tokens()->where('name', $request->device_name)->delete();
+            $token = $user->createToken($request->device_name, ['item:read','item:write'])->plainTextToken;
+            $user->token = $token;
+            $user->device_name = $request->device_name;
+            
+            return new AuthUserResource($user);
+
+        } catch (\Throwable $th) {
+            throw $th;
         }
-    
-        $user->tokens()->where('name', $request->device_name)->delete();
-    
-        return $user->createToken($request->device_name, ['item:read','item:write'])->plainTextToken;
+        
     }
 
     public function register(StoreUserRequest $storeUserRequest) {
@@ -43,11 +53,6 @@ class AuthController extends Controller
         } catch (\Throwable $th) {
             throw $th;
         }
-        // catch (\Exception $e) {
-        //     return response()->json([
-        //         'message' => $e->getMessage()
-        //     ], $e->getCode());
-        // }
 
     }
     public function logout(LogoutUserRequest $logoutUserRequest) {
