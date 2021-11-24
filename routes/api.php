@@ -23,28 +23,23 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// API Authenication
-Route::post('/sanctum/token', function (Request $request) {
-    $request->validate([
-        'email' => 'required|email',
-        'password' => 'required',
-        'device_name' => 'required',
-    ]);
 
-    $user = User::where('email', $request->email)->first();
-
-    if (! $user || ! Hash::check($request->password, $user->password)) {
-        throw ValidationException::withMessages([
-            'email' => ['The provided credentials are incorrect.'],
-        ]);
-    }
-    
-    $user->tokens()->where('name', $request->device_name)->delete();
-
-    return $user->createToken($request->device_name)->plainTextToken;
+// Auth
+Route::prefix('v1/auth')->group(function() {
+    Route::post('/sanctum/token', [AuthController::class, 'login']);
+    Route::post('register', [AuthController::class, 'register']);
+    Route::post('logout', [AuthController::class, 'logout']);
 });
 
-Route::middleware('auth:sanctum')->prefix('v1')->group(function() {
-    Route::get('items', [ItemController::class, 'index']);
 
+// Logout
+
+
+// API Resources
+Route::middleware('auth:sanctum')->prefix('v1')->group(function() {
+    Route::get('items', [ItemController::class, 'index'])->middleware('abilities:item:read');
+    Route::get('items/{item}', [ItemController::class, 'show'])->middleware('abilities:item:read');;
+    Route::post('items', [ItemController::class, 'store'])->middleware('abilities:item:write');
+    Route::put('items/{item}', [ItemController::class, 'update'])->middleware('abilities:item:write');
+    Route::delete('items/{item}', [ItemController::class, 'destroy'])->middleware('abilities:item:write');
 });
