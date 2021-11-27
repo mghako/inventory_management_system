@@ -5,8 +5,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
-use App\Http\Controllers\API\Auth\AuthController;
+use App\Http\Controllers\API\Mobile\Auth\AuthController;
 use App\Http\Controllers\API\Item\ItemController;
+use App\Http\Controllers\API\WebApp\Auth\AuthController as AuthAuthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -23,9 +24,14 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+// Web App API Auth
+Route::prefix('v1/webapp/auth')->group(function() {
+    Route::post('login', [AuthAuthController::class, 'authenticate']);
+    Route::post('register', [AuthAuthController::class, 'register']);
+});
 
-// Auth
-Route::prefix('v1/auth')->group(function() {
+// Mobile API Auth
+Route::prefix('v1/mobile/auth')->group(function() {
     Route::post('/sanctum/token', [AuthController::class, 'login']);
     Route::post('register', [AuthController::class, 'register']);
     Route::post('logout', [AuthController::class, 'logout']);
