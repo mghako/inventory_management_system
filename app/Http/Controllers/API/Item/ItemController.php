@@ -11,7 +11,7 @@ use App\Http\Requests\Items\UpdateItemRequest;
 class ItemController extends Controller
 {
     public function index() {
-        return ItemResource::collection(Item::all());
+        return ItemResource::collection(Item::paginate(10));
     }
 
     public function show(Item $item) {
